@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbit Invest - Simulation Trading Futuriste</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-space: #050614;
+            --bg-panel: #0c0e24;
+            --bg-panel-light: #16193b;
+            --neon-cyan: #00f3ff;
+            --neon-purple: #9d00ff;
+            --neon-green: #39ff14;
+            --neon-red: #ff0055;
+            --text-main: #f0f2fa;
+            --text-muted: #6e759f;
+            --border-glow: #1f244d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: var(--bg-space);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* BARRE DE NAVIGATION SUPÉRIEURE */
+        header {
+            background-color: var(--bg-panel);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-glow);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.05);
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .menu-btn div {
+            width: 24px;
+            height: 2px;
+            background-color: var(--neon-cyan);
+            box-shadow: 0 0 5px var(--neon-cyan);
+            transition: 0.3s;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-svg {
+            width: 30px;
+            height: 30px;
+            filter: drop-shadow(0 0 5px var(--neon-cyan));
+        }
+
+        .brand-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* ZONE BOUTON / RECHERCHE BOURSE EN HAUT À DROITE */
+        .stock-selector-container {
+            position: relative;
+        }
+
+        .stock-select-btn {
+            background: var(--bg-panel-light);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+        }
+
+        .stock-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            width: 220px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 200;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .stock-dropdown div {
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(31, 36, 77, 0.3);
+            transition: background 0.2s;
+        }
+
+        .stock-dropdown div:hover {
+            background: var(--bg-panel-light);
+            color: var(--neon-cyan);
+        }
+
+        .wallet-pill {
+            background: rgba(57, 255, 20, 0.05);
+            border: 1px solid var(--neon-green);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            color: var(--neon-green);
+            text-shadow: 0 0 5px rgba(57, 255, 20, 0.2);
+        }
+
+        /* MENU TIROIR LATÉRAL (3 BARRES) */
+        .sidebar-drawer {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-glow);
+            box-shadow: 10px 0 40px rgba(0,0,0,0.5);
+            z-index: 500;
+            transition: left 0.3s ease;
+            padding-top: 80px;
+            box-sizing: border-box;
+        }
+
+        .sidebar-drawer.open {
+            left: 0;
+        }
+
+        .drawer-menu-item {
+            padding: 16px 28px;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: var(--text-main);
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .drawer-menu-item:hover, .drawer-menu-item.active {
+            background: var(--bg-panel-light);
+            color: var(--neon-cyan);
+            border-left-color: var(--neon-cyan);
+        }
+
+        /* LAYOUT CENTRAL PRINCIPAL */
+        .main-layout {
+            display: flex;
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ÉCRAN DE BIENVENUE PAR DÉFAUT */
+        .welcome-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-space);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .welcome-title {
+            font-size: 2.2rem;
+            font-weight: 200;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .welcome-title span {
+            color: var(--neon-cyan);
+            font-weight: 800;
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+
+        .welcome-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        /* CONTENU DES ONGLETS ACTIVÉS */
+        .content-panel {
+            width: 100%;
+            height: 100%;
+            display: none;
+            grid-template-columns: 320px 1fr;
+        }
+
+        .content-panel.active {
+            display: grid;
+        }
+
+        /* LISTE DES ACTIFS (SOUS-PANNEAU) */
+        .assets-sidebar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-glow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-heading {
+            padding: 16px 20px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-glow);
+            margin: 0;
+        }
+
+        .asset-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .asset-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(31, 36, 77, 0.3);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .asset-row:hover {
+            background: var(--bg-panel-light);
+        }
+
+        .asset-row.active {
+            background: rgba(0, 243, 255, 0.03);
+            border-left: 2px solid var(--neon-cyan);
+        }
+
+        /* ESPACE GRAPHIQUE + TRADING MODE DÉMO */
+        .trading-workspace {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-space);
+        }
+
+        .workspace-header {
+            padding: 16px 24px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-glow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-tools {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            background: var(--bg-panel-light);
+            border: 1px solid var(--border-glow);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: 0.2s;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .chart-frame {
+            flex-grow: 1;
+            position: relative;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        #drawingCanvas {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            width: calc(100% - 48px);
+            height: calc(100% - 48px);
+            z-index: 10;
+            cursor: crosshair;
+            pointer-events: none;
+        }
+
+        /* FORMULAIRE INVESTISSEMENT DÉMO */
+        .demo-invest-bar {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-glow);
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .invest-input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .invest-input-box label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .invest-input-box input {
+            background: var(--bg-panel-light);
+            border: 1px solid var(--border-glow);
+            padding: 12px;
+            border-radius: 6px;
+            color: white;
+            font-family: monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .invest-input-box input:focus {
+            border-color: var(--neon-cyan);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn.buy { background: var(--neon-green); color: var(--bg-space); box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); }
+        .action-btn.sell { background: var(--neon-red); color: white; box-shadow: 0 0 15px rgba(255, 0, 85, 0.2); }
+        .action-btn:hover { filter: brightness(1.2); }
+
+        /* MODALE INTERACTIVE DE CHOIX (VOIR GRAPHIQUE / INVESTIR) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 4, 12, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choice-modal {
+            background: var(--bg-panel);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+            border-radius: 12px;
+            padding: 30px;
+            width: 400px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .modal-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            padding: 14px;
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+
+        .modal-btn.primary { background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple)); color: white; border: none; }
+        .modal-btn.secondary { background: var(--bg-panel-light); color: var(--neon-green); border-color: var(--neon-green); }
+        .modal-btn.cancel { background: transparent; color: var(--text-muted); }
+        .modal-btn:hover { filter: brightness(1.2); }
+
+        /* ÉCRAN DU WALLET */
+        .wallet-view-pane {
+            width: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .wallet-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* RIG DE TOASTS OBLIGATOIRE */
+        #toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: var(--neon-purple);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            box-shadow: 0 0 15px rgba(157, 0, 255, 0.4);
+            z-index: 2000;
+            display: none;
+        }
+
+        .backdrop-close {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 400;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="backdrop-close" id="menuBackdrop" onclick="toggleMenu(false)"></div>
+
+    <header>
+        <div class="header-left">
+            <button class="menu-btn" onclick="toggleMenu(true)">
+                <div></div><div></div><div></div>
+            </button>
+            <div class="logo-container" onclick="resetToWelcome()">
+                <svg class="logo-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="10" fill="#9d00ff"/>
+                    <ellipse cx="50" cy="50" rx="40" ry="15" fill="none" stroke="#00f3ff" stroke-width="3" transform="rotate(-30 50 50)"/>
+                    <circle cx="20" cy="33" r="4" fill="#39ff14"/>
+                </svg>
+                <div class="brand-name">Orbit Invest</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="stock-selector-container">
+                <button class="stock-select-btn" onclick="toggleStockDropdown()">Entreprises Bourse ▾</button>
+                <div class="stock-dropdown" id="stockDropdown">
+                    </div>
+            </div>
+            <div class="wallet-pill" id="headerBalance">10 000.00 $</div>
+        </div>
+    </header>
+
+    <div class="sidebar-drawer" id="sidebarDrawer">
+        <div class="drawer-menu-item" onclick="navigateTo('stock')">📈 Entreprises Bourse</div>
+        <div class="drawer-menu-item" onclick="navigateTo('crypto')">🪙 Actifs Crypto</div>
+        <div class="drawer-menu-item" onclick="navigateTo('meme')">🚀 Meme Coins</div>
+        <div class="drawer-menu-item" onclick="navigateTo('wallet')">💼 Mon Wallet Démo</div>
+    </div>
+
+    <div class="main-layout">
+        
+        <div class="welcome-view" id="welcomeScreen">
+            <h1 class="welcome-title">Bienvenue sur <span>Orbit Invest</span></h1>
+            <p class="welcome-subtitle">Ouvrez le menu en haut à gauche ou parcourez les entreprises en haut à droite pour analyser les cours mondiaux et vous entraîner au trading de simulation.</p>
+            <button class="stock-select-btn" style="padding: 12px 30px;" onclick="toggleMenu(true)">Commencer à s'entraîner</button>
+        </div>
+
+        <div class="content-panel" id="marketWorkspace">
+            
+            <div class="assets-sidebar">
+                <h3 class="panel-heading" id="sidebarCategoryTitle">Actifs</h3>
+                <ul class="asset-list" id="assetsContainer"></ul>
+            </div>
+
+            <div class="trading-workspace">
+                <div class="workspace-header">
+                    <div>
+                        <h2 id="activeSymbol" style="margin: 0; font-size: 1.3rem;">BTC / USD</h2>
+                        <span id="activeFullName" style="font-size: 0.8rem; color: var(--text-muted);">Bitcoin Core Asset</span>
+                    </div>
+                    <div class="analysis-tools">
+                        <button class="tool-btn" id="tool-trend" onclick="toggleDrawingTool('trend')">📈 Ligne de tendance</button>
+                        <button class="tool-btn" id="tool-horiz" onclick="toggleDrawingTool('horizontal')">➖ Support/Résistance</button>
+                        <button class="tool-btn" onclick="clearDrawings()">🗑️ Effacer</button>
+                    </div>
+                </div>
+
+                <div class="chart-frame">
+                    <canvas id="drawingCanvas"></canvas>
+                    <canvas id="mainChart"></canvas>
+                </div>
+
+                <div class="demo-invest-bar">
+                    <div class="invest-input-box">
+                        <label>Taille de la position (Simulation)</label>
+                        <input type="number" id="tradeQuantity" value="1" step="any">
+                    </div>
+                    <div class="btn-group">
+                        <button class="action-btn buy" onclick="executeDemoTrade('BUY')">Investir à la Hausse (Achat)</button>
+                        <button class="action-btn sell" onclick="executeDemoTrade('SELL')">Investir à la Baisse (Vente)</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="wallet-view-pane" id="walletWorkspace">
+            <h1 style="font-weight: 300; margin-top: 0; letter-spacing: 1px;">Votre Portefeuille d'Entraînement</h1>
+            <div class="wallet-grid" id="walletCardsContainer"></div>
+        </div>
+
+    </div>
+
+    <div class="modal-overlay" id="choiceModal">
+        <div class="choice-modal">
+            <h3 class="modal-title" id="modalAssetTitle">Sélection d'actif</h3>
+            <p class="modal-desc" id="modalAssetDesc">Choisissez l'action à exécuter dans votre simulateur.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" onclick="handleModalChoice('CHART')">📊 Analyser le graphique</button>
+                <button class="modal-btn secondary" onclick="handleModalChoice('INVEST')">💰 Investir en Mode Démo</button>
+                <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // ARCHITECTURE DES DONNÉES DU MARCHÉ EN DIRECT
+        const marketDatabase = {
+            stock: [
+                { symbol: "AAPL", name: "Apple Inc.", price: 178.50, change: 1.2, history: [175, 176, 175.8, 177, 177.4, 178.50] },
+                { symbol: "NVDA", name: "NVIDIA Corp.", price: 875.20, change: 4.8, history: [820, 835, 850, 844, 861, 875.20] },
+                { symbol: "TSLA", name: "Tesla Inc.", price: 171.05, change: -2.3, history: [178, 176, 175, 172, 170, 171.05] },
+                { symbol: "MSFT", name: "Microsoft Corp.", price: 421.90, change: 0.5, history: [418, 420, 419, 422, 421, 421.90] },
+                { symbol: "AMZN", name: "Amazon.com Inc.", price: 1 routines, change: -1.1, history: [182, 181, 183, 180, 179, 178.20] }
+            ],
+            crypto: [
+                { symbol: "BTC", name: "Bitcoin", price: 67400, change: 2.1, history: [65200, 66100, 65900, 66400, 67100, 67400] },
+                { symbol: "ETH", name: "Ethereum", price: 3540, change: -0.4, history: [3590, 3570, 3580, 3550, 3530, 3540] },
+                { symbol: "SOL", name: "Solana", price: 148.60, change: 7.2, history: [135, 139, 142, 141, 145, 148.60] }
+            ],
+            meme: [
+                { symbol: "DOGE", name: "Dogecoin", price: 0.142, change: 15.4, history: [0.120, 0.122, 0.128, 0.131, 0.135, 0.142] },
+                { symbol: "SHIB", name: "Shiba Inu", price: 0.000024, change: 9.1, history: [0.000021, 0.000022, 0.000022, 0.000023, 0.000024, 0.000024] },
+                { symbol: "PEPE", name: "Pepe Coin", price: 0.000014, change: -5.3, history: [0.000015, 0.000015, 0.000014, 0.000014, 0.000013, 0.000014] }
+            ]
+        };
+
+        // ENTRAÎNEMENT BALANCE DE DÉPART
+        let demoWallet = {
+            USD: 10000.00,
+            AAPL: 10,
+            BTC: 0.25,
+            DOGE: 5000
+        };
+
+        let currentActiveCategory = 'crypto';
+        let currentSelectedAsset = marketDatabase.crypto[0];
+        let modalPendingAsset = null;
+        let chartInstance = null;
+
+        // ÉTAT ANALYSE VECTORIELLE DESSIN
+        let activeTool = null;
+        let isDrawing = false;
+        let drawStart = null;
+        let drawings = [];
+
+        window.onload = function() {
+            initTradingChart();
+            generateStockTopRightMenu();
+            renderWalletDashboard();
+            setupDrawingEngine();
+            setInterval(simulateLiveTicks, 2000); // Moteur de ticks financiers
+        };
+
+        // GÉNÉRATION COMPLÈTE DE TOUTES LES ENTREPRISES DE LA BOURSE EN HAUT À DROITE
+        function generateStockTopRightMenu() {
+            const container = document.getElementById('stockDropdown');
+            container.innerHTML = '';
+            marketDatabase.stock.forEach(stock => {
+                const div = document.createElement('div');
+                div.innerText = `${stock.symbol} - ${stock.name}`;
+                div.onclick = () => {
+                    toggleStockDropdown();
+                    triggerAssetFlow(stock, 'stock');
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function toggleStockDropdown() {
+            const dropdown = document.getElementById('stockDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // CONTROL TIROIR (3 BARRES)
+        function toggleMenu(open) {
+            document.getElementById('sidebarDrawer').classList.toggle('open', open);
+            document.getElementById('menuBackdrop').style.display = open ? 'block' : 'none';
+        }
+
+        // REDIRECTION DE NAVIGATION DPUIS LE TIROIR LATÉRAL
+        function navigateTo(category) {
+            toggleMenu(false);
+            document.getElementById('welcomeScreen').style.display = 'none';
+            
+            if (category === 'wallet') {
+                document.getElementById('marketWorkspace').style.display = 'none';
+                document.getElementById('walletWorkspace').style.display = 'block';
+                renderWalletDashboard();
+            } else {
+                document.getElementById('walletWorkspace').style.display = 'none';
+                document.getElementById('marketWorkspace').style.display = 'grid';
+                currentActiveCategory = category;
+                
+                // Titre dynamique du menu de gauche
+                const titles = { stock: "Actions Bourse", crypto: "Cryptomonnaies", meme: "Meme Coins" };
+                document.getElementById('sidebarCategoryTitle').innerText = titles[category];
+                
+                renderSidebarAssetsList();
+                loadAssetIntoWorkspace(marketDatabase[category][0]);
+            }
+        }
+
+        // RE-AFFICHAGE DE LA LISTE DE GAUCHE CONFORME À LA CATÉGORIE ACTIVE
+        function renderSidebarAssetsList() {
+            const container = document.getElementById('assetsContainer');
+            container.innerHTML = '';
+            marketDatabase[currentActiveCategory].forEach(asset => {
+                const activeClass = asset.symbol === currentSelectedAsset.symbol ? 'active' : '';
+                const li = document.createElement('li');
+                li.className = `asset-row ${activeClass}`;
+                li.onclick = () => triggerAssetFlow(asset, currentActiveCategory);
+                li.innerHTML = `
+                    <div>
+                        <strong style="display:block;">${asset.symbol}</strong>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">${asset.name}</span>
+                    </div>
+                    <div style="text-align:right; font-family:monospace;">
+                        <div>${asset.price.toFixed(2)} $</div>
+                        <span style="font-size:0.75rem;" class="${asset.change >= 0 ? 'up' : 'down'}">${asset.change >= 0 ? '+' : ''}${asset.change}%</span>
+                    </div>
+                `;
+                container.appendChild(li);
+            });
+        }
+
+        // DÉCLENCHEUR DE FLUX INTERACTIF PROPOSÉ À L'UTILISATEUR (REQUIS)
+        function triggerAssetFlow(asset, category) {
+            currentActiveCategory = category;
+            modalPendingAsset = asset;
+            
+            document.getElementById('modalAssetTitle').innerText = `${asset.symbol} - ${asset.name}`;
+            document.getElementById('modalAssetDesc').innerText = `Cours actuel : ${asset.price.toFixed(2)} $. Souhaitez-vous charger son analyse graphique ou ouvrir une position démo ?`;
+            document.getElementById('choiceModal').style.display = 'flex';
+        }
+
+        function handleModalChoice(choice) {
+            closeModal();
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('walletWorkspace').style.display = 'none';
+            document.getElementById('marketWorkspace').style.display = 'grid';
+
+            // Met à jour la liste latérale
+            const titles = { stock: "Actions Bourse", crypto: "Cryptomonnaies", meme: "Meme Coins" };
+            document.getElementById('sidebarCategoryTitle').innerText = titles[currentActiveCategory];
+            renderSidebarAssetsList();
+
+            loadAssetIntoWorkspace(modalPendingAsset);
+
+            if (choice === 'INVEST') {
+                document.getElementById('tradeQuantity').focus();
+                showToast(`Passage en Mode Démo sur ${modalPendingAsset.symbol}. Entrez le montant en bas.`);
+            } else {
+                showToast(`Graphique de ${modalPendingAsset.symbol} chargé avec succès.`);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('choiceModal').style.display = 'none';
+        }
+
+        function loadAssetIntoWorkspace(asset) {
+            currentSelectedAsset = asset;
+            document.getElementById('activeSymbol').innerText = `${asset.symbol} / USD`;
+            document.getElementById('activeFullName').innerText = `${asset.name} - Cotation temps réel`;
+            
+            chartInstance.data.datasets[0].label = asset.symbol;
+            chartInstance.data.datasets[0].data = [...asset.history];
+            chartInstance.update();
+            
+            renderSidebarAssetsList();
+            clearDrawings();
+        }
+
+        // EXECUTION D'UN ORDRE DE TRADING EN MODE DÉMO
+        function executeDemoTrade(direction) {
+            const qty = parseFloat(document.getElementById('tradeQuantity').value);
+            if (isNaN(qty) || qty <= 0) {
+                showToast("Erreur : Quantité invalide");
+                return;
+            }
+
+            const tradeValue = qty * currentSelectedAsset.price;
+
+            if (direction === 'BUY') {
+                if (demoWallet.USD >= tradeValue) {
+                    demoWallet.USD -= tradeValue;
+                    demoWallet[currentSelectedAsset.symbol] = (demoWallet[currentSelectedAsset.symbol] || 0) + qty;
+                    showToast(`Succès Démo : Achat de ${qty} ${currentSelectedAsset.symbol}`);
+                } else {
+                    showToast("Fonds USD d'entraînement insuffisants !");
+                }
+            } else if (direction === 'SELL') {
+                if (demoWallet[currentSelectedAsset.symbol] && demoWallet[currentSelectedAsset.symbol] >= qty) {
+                    demoWallet.USD += tradeValue;
+                    demoWallet[currentSelectedAsset.symbol] -= qty;
+                    showToast(`Succès Démo : Vente de ${qty} ${currentSelectedAsset.symbol}`);
+                } else {
+                    showToast(`Positions d'entraînement insuffisantes sur le ${currentSelectedAsset.symbol}`);
+                }
+            }
+
+            renderWalletDashboard();
+        }
+
+        // INTERFACE RENDU DU WALLET
+        function renderWalletDashboard() {
+            document.getElementById('headerBalance').innerText = `${demoWallet.USD.toLocaleString('fr-FR', {minimumFractionDigits: 2})} $`;
+            const cardsContainer = document.getElementById('walletCardsContainer');
+            if(!cardsContainer) return;
+            cardsContainer.innerHTML = '';
+
+            // Card du cash USD
+            const cashCard = document.createElement('div');
+            cashCard.className = 'wallet-card';
+            cashCard.style.borderColor = 'var(--neon-green)';
+            cashCard.innerHTML = `<div><strong>Liquidités USD</strong><div style="font-size:0.75rem;color:var(--text-muted)">Disponibles simulation</div></div><div style="font-family:monospace;color:var(--neon-green)">${demoWallet.USD.toLocaleString('fr-FR', {minimumFractionDigits:2})} $</div>`;
+            cardsContainer.appendChild(cashCard);
+
+            // Parcourir les lignes d'actifs possédés
+            for (const [symbol, qty] of Object.entries(demoWallet)) {
+                if (symbol === 'USD' || qty <= 0) continue;
+
+                let currentPrice = 0;
+                Object.values(marketDatabase).flat().forEach(a => {
+                    if(a.symbol === symbol) currentPrice = a.price;
+                });
+
+                const valuation = qty * currentPrice;
+                const card = document.createElement('div');
+                card.className = 'wallet-card';
+                card.innerHTML = `
+                    <div>
+                        <strong>${symbol}</strong>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">${qty.toFixed(4)} unités</div>
+                    </div>
+                    <div style="font-family:monospace; text-align:right;">
+                        <div>${valuation.toLocaleString('fr-FR', {minimumFractionDigits:2})} $</div>
+                        <span style="font-size:0.7rem;color:var(--text-muted)">${currentPrice.toFixed(2)} $ / u</span>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            }
+        }
+
+        // MOTEUR DU GRAPHIQUE CHART.JS
+        function initTradingChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(0, 243, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(5, 6, 20, 0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ["12:00", "13:00", "14:00", "15:00", "16:00", "En direct"],
+                    datasets: [{
+                        label: 'BTC',
+                        data: [65200, 66100, 65900, 66400, 67100, 67400],
+                        borderColor: '#00f3ff',
+                        borderWidth: 2.5,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.2,
+                        pointBackgroundColor: '#9d00ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(31, 36, 77, 0.2)' }, ticks: { color: '#6e759f' } },
+                        y: { grid: { color: 'rgba(31, 36, 77, 0.2)' }, ticks: { color: '#6e759f' } }
+                    }
+                }
+            });
+        }
+
+        // SIMULATION EN TEMPS RÉEL DES FLUX FINANCIERS (TICKS LIVE)
+        function simulateLiveTicks() {
+            Object.values(marketDatabase).flat().forEach(asset => {
+                const move = (Math.random() * 1.6 - 0.8) / 100; // Fluctuation de +/- 0.8%
+                asset.price += asset.price * move;
+                asset.change = parseFloat((asset.change + move * 100).toFixed(2));
+
+                if (asset.symbol === currentSelectedAsset.symbol) {
+                    chartInstance.data.datasets[0].data.shift();
+                    chartInstance.data.datasets[0].data.push(asset.price);
+                    chartInstance.update('none');
+                }
+            });
+            if (document.getElementById('marketWorkspace').style.display === 'grid') {
+                renderSidebarAssetsList();
+            }
+        }
+
+        // REINITIALISATION ACCUEIL CENTRAL
+        function resetToWelcome() {
+            document.getElementById('marketWorkspace').style.display = 'none';
+            document.getElementById('walletWorkspace').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'flex';
+        }
+
+        // GESTION ET TRACÉ DES OUTILS TECHNIQUES (MOTEUR VECTORIEL CANVASES)
+        function setupDrawingEngine() {
+            const canvas = document.getElementById('drawingCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function adjustCanvasDimensions() {
+                canvas.width = canvas.parentElement.clientWidth - 48;
+                canvas.height = canvas.parentElement.clientHeight - 48;
+                re-renderVectorDrawings();
+            }
+
+            window.addEventListener('resize', adjustCanvasDimensions);
+            setTimeout(adjustCanvasDimensions, 400);
+
+            canvas.addEventListener('mousedown', (e) => {
+                if(!activeTool) return;
+                isDrawing = true;
+                const bounds = canvas.getBoundingClientRect();
+                drawStart = { x: e.clientX - bounds.left, y: e.clientY - bounds.top };
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing || !activeTool) return;
+                const bounds = canvas.getBoundingClientRect();
+                const currentPos = { x: e.clientX - bounds.left, y: e.clientY - bounds.top };
+
+                re-renderVectorDrawings();
+
+                ctx.strokeStyle = activeTool === 'trend' ? '#00f3ff' : '#9d00ff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+
+                if (activeTool === 'trend') {
+                    ctx.moveTo(drawStart.x, drawStart.y);
+                    ctx.lineTo(currentPos.x, currentPos.y);
+                } else if (activeTool === 'horizontal') {
+                    ctx.moveTo(0, drawStart.y);
+                    ctx.lineTo(canvas.width, drawStart.y);
+                }
+                ctx.stroke();
+            });
+
+            canvas.addEventListener('mouseup', (e) => {
+                if(!isDrawing) return;
+                isDrawing = false;
+                const bounds = canvas.getBoundingClientRect();
+                const drawEnd = { x: e.clientX - bounds.left, y: e.clientY - bounds.top };
+
+                drawings.push({ type: activeTool, start: drawStart, end: drawEnd });
+                re-renderVectorDrawings();
+            });
+        }
+
+        function toggleDrawingTool(tool) {
+            const canvas = document.getElementById('drawingCanvas');
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+
+            if (activeTool === tool) {
+                activeTool = null;
+                canvas.style.pointerEvents = 'none';
+            } else {
+                activeTool = tool;
+                canvas.style.pointerEvents = 'all';
+                document.getElementById(`tool-${tool}`).classList.add('active');
+                showToast("Outil actif : Cliquez-glissez pour analyser le graphique.");
+            }
+        }
+
+        function re-renderVectorDrawings() {
+            const canvas = document.getElementById('drawingCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setLineDash([]);
+
+            drawings.forEach(d => {
+                ctx.strokeStyle = d.type === 'trend' ? '#00f3ff' : '#9d00ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                if (d.type === 'trend') {
+                    ctx.moveTo(d.start.x, d.start.y);
+                    ctx.lineTo(d.end.x, d.end.y);
+                } else if (d.type === 'horizontal') {
+                    ctx.moveTo(0, d.start.y);
+                    ctx.lineTo(canvas.width, d.start.y);
+                }
+                ctx.stroke();
+            });
+        }
+
+        function clearDrawings() {
+            drawings = [];
+            re-renderVectorDrawings();
+            showToast("Analyses graphiques supprimées.");
+        }
+
+        function showToast(text) {
+            const t = document.getElementById('toast');
+            t.innerText = text;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3500);
+        }
+    </script>
+</body>
+</html>
